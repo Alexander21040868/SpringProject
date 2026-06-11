@@ -1,0 +1,1013 @@
+openapi: 3.0.3
+info:
+  title: Финпульс — API учёта личных и семейных финансов
+  version: 1.0.0
+  description: |
+    Контракт backend-системы учёта личных и семейных финансов.
+
+    Архитектура: модульный монолит + выделенные сервисы **auth** и **reports**,
+    за единой точкой входа (API Gateway). Все защищённые эндпоинты используют
+    JWT (Bearer). Пользователь видит только свои данные и данные семей, в которых состоит.
+
+    Ролевая модель внутри семьи: `OWNER` (админ), `MEMBER` (участник), `VIEWER` (просмотр).
+  contact:
+    name: Финпульс
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Локальный API Gateway
+tags:
+  - name: Auth
+    description: Регистрация, вход, выдача и обновление JWT (сервис auth)
+  - name: Users
+    description: Профиль текущего пользователя
+  - name: Families
+    description: Семьи и финансовые группы
+  - name: Members
+    description: Участники семьи, роли и приглашения
+  - name: Categories
+    description: Категории расходов и источники доходов
+  - name: Operations
+    description: Доходы и расходы
+  - name: Reports
+    description: Отчёты и аналитика (сервис reports)
+  - name: Limits
+    description: Лимиты бюджета по категориям
+
+paths:
+  # ----------------------------- AUTH -----------------------------
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация пользователя
+      operationId: register
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Пользователь создан, выданы токены
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '409':
+          description: Email уже занят
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по email и паролю
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401':
+          description: Неверный логин или пароль
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление access-токена по refresh-токену
+      operationId: refresh
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        '200':
+          description: Новая пара токенов
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ----------------------------- USERS -----------------------------
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Текущий пользователь
+      operationId: getMe
+      responses:
+        '200':
+          description: Профиль
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Users]
+      summary: Обновить профиль
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateUserRequest' }
+      responses:
+        '200':
+          description: Обновлённый профиль
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  # ---------------------------- FAMILIES ----------------------------
+  /families:
+    get:
+      tags: [Families]
+      summary: Семьи текущего пользователя
+      operationId: listFamilies
+      responses:
+        '200':
+          description: Список семей
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Family' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [Families]
+      summary: Создать семью (создатель становится OWNER)
+      operationId: createFamily
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFamilyRequest' }
+      responses:
+        '201':
+          description: Семья создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /families/{familyId}:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Families]
+      summary: Получить семью
+      operationId: getFamily
+      responses:
+        '200':
+          description: Семья
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Families]
+      summary: Изменить семью (только OWNER)
+      operationId: updateFamily
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFamilyRequest' }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Families]
+      summary: Удалить семью (только OWNER)
+      operationId: deleteFamily
+      responses:
+        '204': { description: Удалено }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------- MEMBERS -----------------------------
+  /families/{familyId}/members:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Members]
+      summary: Участники семьи
+      operationId: listMembers
+      responses:
+        '200':
+          description: Список участников
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Member' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /families/{familyId}/members/{memberId}:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+      - name: memberId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Members]
+      summary: Изменить роль участника (только OWNER)
+      operationId: updateMemberRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '200':
+          description: Обновлено
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Member' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Members]
+      summary: Удалить участника (только OWNER)
+      operationId: removeMember
+      responses:
+        '204': { description: Удалён }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /families/{familyId}/invitations:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+    get:
+      tags: [Members]
+      summary: Приглашения семьи
+      operationId: listInvitations
+      responses:
+        '200':
+          description: Список приглашений
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Invitation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Members]
+      summary: Пригласить участника по email (только OWNER)
+      operationId: createInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email: { type: string, format: email }
+                role: { $ref: '#/components/schemas/Role' }
+      responses:
+        '201':
+          description: Приглашение создано
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Invitation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /families/{familyId}/invitations/{invitationId}:
+    parameters:
+      - $ref: '#/components/parameters/FamilyId'
+      - name: invitationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    delete:
+      tags: [Members]
+      summary: Отменить приглашение (только OWNER)
+      operationId: cancelInvitation
+      responses:
+        '204': { description: Отменено }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ------------------- MY INVITATIONS (получатель) -------------------
+  /invitations:
+    get:
+      tags: [Members]
+      summary: Приглашения, адресованные текущему пользователю
+      operationId: listMyInvitations
+      responses:
+        '200':
+          description: Список входящих приглашений
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MyInvitation' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /invitations/{invitationId}/accept:
+    parameters:
+      - name: invitationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [Members]
+      summary: Принять приглашение (пользователь вступает в семью)
+      operationId: acceptInvitation
+      responses:
+        '200':
+          description: Семья, в которую вступил пользователь
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Family' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /invitations/{invitationId}/decline:
+    parameters:
+      - name: invitationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    post:
+      tags: [Members]
+      summary: Отклонить приглашение
+      operationId: declineInvitation
+      responses:
+        '204': { description: Отклонено }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------- CATEGORIES ----------------------------
+  /categories:
+    get:
+      tags: [Categories]
+      summary: Категории (расходов и доходов)
+      operationId: listCategories
+      parameters:
+        - name: familyId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/OperationType' }
+      responses:
+        '200':
+          description: Список категорий
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Category' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Categories]
+      summary: Создать категорию
+      operationId: createCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryRequest' }
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /categories/{categoryId}:
+    parameters:
+      - name: categoryId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [Categories]
+      summary: Изменить категорию
+      operationId: updateCategory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CategoryRequest' }
+      responses:
+        '200':
+          description: Обновлена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Category' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Categories]
+      summary: Удалить категорию
+      operationId: deleteCategory
+      responses:
+        '204': { description: Удалена }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------- OPERATIONS ----------------------------
+  /operations:
+    get:
+      tags: [Operations]
+      summary: Список операций с фильтрами и пагинацией
+      operationId: listOperations
+      parameters:
+        - name: familyId
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/OperationType' }
+        - name: categoryId
+          in: query
+          schema: { type: string, format: uuid }
+        - name: memberId
+          in: query
+          description: Фильтр по участнику (userId)
+          schema: { type: string, format: uuid }
+        - name: from
+          in: query
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          schema: { type: string, format: date }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: page
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: sort
+          in: query
+          schema: { type: string, default: 'date,desc' }
+      responses:
+        '200':
+          description: Страница операций
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/OperationPage' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Operations]
+      summary: Добавить операцию (доход или расход)
+      operationId: createOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OperationRequest' }
+      responses:
+        '201':
+          description: Создана
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /operations/{operationId}:
+    parameters:
+      - name: operationId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      tags: [Operations]
+      summary: Получить операцию
+      operationId: getOperation
+      responses:
+        '200':
+          description: Операция
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Operations]
+      summary: Изменить операцию
+      operationId: updateOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OperationRequest' }
+      responses:
+        '200':
+          description: Обновлена
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Operation' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [Operations]
+      summary: Удалить операцию
+      operationId: deleteOperation
+      responses:
+        '204': { description: Удалена }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------- REPORTS -----------------------------
+  /reports/summary:
+    get:
+      tags: [Reports]
+      summary: Сводка за период (доход, расход, баланс, накопления)
+      operationId: reportSummary
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - $ref: '#/components/parameters/PeriodFrom'
+        - $ref: '#/components/parameters/PeriodTo'
+        - $ref: '#/components/parameters/MemberIds'
+      responses:
+        '200':
+          description: Сводка
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SummaryReport' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/by-category:
+    get:
+      tags: [Reports]
+      summary: Структура по категориям
+      operationId: reportByCategory
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - $ref: '#/components/parameters/PeriodFrom'
+        - $ref: '#/components/parameters/PeriodTo'
+        - $ref: '#/components/parameters/MemberIds'
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/OperationType' }
+      responses:
+        '200':
+          description: Доли по категориям
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CategorySlice' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/by-member:
+    get:
+      tags: [Reports]
+      summary: Структура по участникам
+      operationId: reportByMember
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - $ref: '#/components/parameters/PeriodFrom'
+        - $ref: '#/components/parameters/PeriodTo'
+        - name: type
+          in: query
+          schema: { $ref: '#/components/schemas/OperationType' }
+      responses:
+        '200':
+          description: Суммы по участникам
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/MemberSlice' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/cashflow:
+    get:
+      tags: [Reports]
+      summary: Денежный поток за период с группировкой по дню/неделе/месяцу
+      description: |
+        Возвращает доходы и расходы, сгруппированные по интервалам внутри произвольного
+        периода `from`..`to`. Для коротких периодов используйте мелкую гранулярность
+        (`DAY`/`WEEK`), для года — `MONTH`.
+      operationId: reportCashflow
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - $ref: '#/components/parameters/PeriodFrom'
+        - $ref: '#/components/parameters/PeriodTo'
+        - $ref: '#/components/parameters/MemberIds'
+        - name: granularity
+          in: query
+          description: Шаг группировки. По умолчанию MONTH.
+          schema:
+            $ref: '#/components/schemas/Granularity'
+      responses:
+        '200':
+          description: Поток по интервалам
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CashflowPoint' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /reports/export:
+    get:
+      tags: [Reports]
+      summary: Выгрузка отчёта в файл
+      operationId: exportReport
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - $ref: '#/components/parameters/PeriodFrom'
+        - $ref: '#/components/parameters/PeriodTo'
+        - $ref: '#/components/parameters/MemberIds'
+        - name: format
+          in: query
+          required: true
+          schema: { type: string, enum: [xlsx, pdf, csv] }
+      responses:
+        '200':
+          description: Файл-документ отчёта
+          content:
+            application/octet-stream:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ------------------------------ LIMITS ------------------------------
+  /limits:
+    get:
+      tags: [Limits]
+      summary: Лимиты и их состояние за текущий месяц
+      operationId: getLimits
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+        - name: month
+          in: query
+          description: Месяц в формате YYYY-MM (по умолчанию текущий)
+          schema: { type: string, example: '2026-06' }
+      responses:
+        '200':
+          description: Лимиты с прогрессом
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LimitStatus' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    put:
+      tags: [Limits]
+      summary: Задать/обновить лимиты (только OWNER)
+      operationId: setLimits
+      parameters:
+        - $ref: '#/components/parameters/FamilyIdQuery'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '#/components/schemas/LimitRequest' }
+      responses:
+        '200':
+          description: Сохранено
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/LimitStatus' }
+        '400': { $ref: '#/components/responses/ValidationError' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    FamilyId:
+      name: familyId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    FamilyIdQuery:
+      name: familyId
+      in: query
+      required: true
+      schema: { type: string, format: uuid }
+    PeriodFrom:
+      name: from
+      in: query
+      required: true
+      description: Начало периода (включительно). Период произвольный — месяц, квартал, год или любой диапазон дат.
+      schema: { type: string, format: date, example: '2026-04-01' }
+    PeriodTo:
+      name: to
+      in: query
+      required: true
+      description: Конец периода (включительно). Должен быть не раньше from.
+      schema: { type: string, format: date, example: '2026-06-30' }
+    MemberIds:
+      name: memberIds
+      in: query
+      description: Список userId участников; пусто = вся семья
+      schema:
+        type: array
+        items: { type: string, format: uuid }
+      style: form
+      explode: true
+
+  responses:
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Forbidden:
+      description: Нет доступа к ресурсу
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationError:
+      description: Некорректные входные данные
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+
+  schemas:
+    Role:
+      type: string
+      enum: [OWNER, MEMBER, VIEWER]
+      description: Роль участника в семье
+    OperationType:
+      type: string
+      enum: [INCOME, EXPENSE]
+    Granularity:
+      type: string
+      enum: [DAY, WEEK, MONTH]
+      default: MONTH
+      description: Шаг группировки данных во времени для отчёта о денежном потоке
+    Currency:
+      type: string
+      enum: [RUB, USD, EUR, KZT, GEL]
+      default: RUB
+
+    RegisterRequest:
+      type: object
+      required: [email, password, name]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8, maxLength: 72 }
+        name: { type: string, minLength: 1, maxLength: 100 }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        tokenType: { type: string, example: Bearer }
+        expiresIn: { type: integer, description: Время жизни access-токена, сек }
+        user: { $ref: '#/components/schemas/User' }
+
+    User:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        name: { type: string }
+        defaultCurrency: { $ref: '#/components/schemas/Currency' }
+        createdAt: { type: string, format: date-time }
+    UpdateUserRequest:
+      type: object
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        defaultCurrency: { $ref: '#/components/schemas/Currency' }
+
+    Family:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        name: { type: string }
+        currency: { $ref: '#/components/schemas/Currency' }
+        balance: { type: number, format: double, description: Текущий общий баланс }
+        membersCount: { type: integer }
+        myRole: { $ref: '#/components/schemas/Role' }
+        createdAt: { type: string, format: date-time }
+    CreateFamilyRequest:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 100 }
+        currency: { $ref: '#/components/schemas/Currency' }
+
+    Member:
+      type: object
+      properties:
+        id: { type: string, format: uuid, description: id записи участия }
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/Role' }
+        color: { type: string, description: HEX-цвет аватара, example: '#185FA5' }
+        joinedAt: { type: string, format: date-time }
+    Invitation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        role: { $ref: '#/components/schemas/Role' }
+        status: { type: string, enum: [PENDING, ACCEPTED, EXPIRED, CANCELLED] }
+        createdAt: { type: string, format: date-time }
+    MyInvitation:
+      type: object
+      description: Приглашение со стороны получателя — для экрана «принять/отклонить»
+      properties:
+        id: { type: string, format: uuid }
+        familyId: { type: string, format: uuid }
+        familyName: { type: string }
+        role: { $ref: '#/components/schemas/Role' }
+        invitedBy: { type: string, description: Имя пригласившего }
+        createdAt: { type: string, format: date-time }
+
+    Category:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        familyId: { type: string, format: uuid }
+        name: { type: string }
+        type: { $ref: '#/components/schemas/OperationType' }
+        icon: { type: string, description: Имя иконки, example: 'shopping-cart' }
+        color: { type: string, example: '#1D9E75' }
+        operationsCount: { type: integer, readOnly: true }
+        total: { type: number, format: double, readOnly: true }
+    CategoryRequest:
+      type: object
+      required: [familyId, name, type]
+      properties:
+        familyId: { type: string, format: uuid }
+        name: { type: string, minLength: 1, maxLength: 60 }
+        type: { $ref: '#/components/schemas/OperationType' }
+        icon: { type: string }
+        color: { type: string }
+
+    Operation:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        familyId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/OperationType' }
+        amount: { type: number, format: double, description: Положительное значение }
+        currency: { $ref: '#/components/schemas/Currency' }
+        date: { type: string, format: date }
+        description: { type: string }
+        category: { $ref: '#/components/schemas/Category' }
+        member: { $ref: '#/components/schemas/Member' }
+        createdAt: { type: string, format: date-time }
+    OperationRequest:
+      type: object
+      required: [familyId, type, amount, date, categoryId]
+      properties:
+        familyId: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/OperationType' }
+        amount:
+          type: number
+          format: double
+          exclusiveMinimum: true
+          minimum: 0
+          description: Сумма операции, строго больше нуля
+        currency: { $ref: '#/components/schemas/Currency' }
+        date: { type: string, format: date }
+        description: { type: string, maxLength: 255 }
+        categoryId: { type: string, format: uuid }
+        memberId:
+          type: string
+          format: uuid
+          description: userId участника; по умолчанию — текущий пользователь
+    OperationPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items: { $ref: '#/components/schemas/Operation' }
+        page: { type: integer }
+        size: { type: integer }
+        totalElements: { type: integer, format: int64 }
+        totalPages: { type: integer }
+        totalIncome: { type: number, format: double }
+        totalExpense: { type: number, format: double }
+
+    SummaryReport:
+      type: object
+      properties:
+        from: { type: string, format: date }
+        to: { type: string, format: date }
+        income: { type: number, format: double }
+        expense: { type: number, format: double }
+        balance: { type: number, format: double }
+        savings: { type: number, format: double }
+        savingsRate: { type: number, format: double, description: Доля сбережений 0..1 }
+        incomeChangePct: { type: number, format: double, nullable: true }
+    CategorySlice:
+      type: object
+      properties:
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        icon: { type: string }
+        color: { type: string }
+        amount: { type: number, format: double }
+        percent: { type: number, format: double, description: Доля 0..100 }
+    MemberSlice:
+      type: object
+      properties:
+        userId: { type: string, format: uuid }
+        name: { type: string }
+        color: { type: string }
+        amount: { type: number, format: double }
+        percent: { type: number, format: double }
+    CashflowPoint:
+      type: object
+      properties:
+        month:
+          type: string
+          description: Ключ интервала — YYYY-MM для MONTH, YYYY-MM-DD (дата начала) для DAY/WEEK
+          example: '2026-06'
+        label: { type: string, description: Подпись интервала для оси графика, example: 'Июн' }
+        income: { type: number, format: double }
+        expense: { type: number, format: double }
+
+    LimitRequest:
+      type: object
+      required: [categoryId, amount]
+      properties:
+        categoryId: { type: string, format: uuid }
+        amount: { type: number, format: double, minimum: 0 }
+    LimitStatus:
+      type: object
+      properties:
+        categoryId: { type: string, format: uuid }
+        name: { type: string }
+        icon: { type: string }
+        color: { type: string }
+        limit: { type: number, format: double }
+        spent: { type: number, format: double }
+        percent: { type: number, format: double, description: spent/limit*100 }
+        status: { type: string, enum: [OK, WARNING, EXCEEDED] }
+
+    Error:
+      type: object
+      description: Единый формат ошибки (RFC-7807-подобный)
+      properties:
+        timestamp: { type: string, format: date-time }
+        status: { type: integer }
+        code: { type: string, example: OPERATION_NOT_FOUND }
+        message: { type: string, example: Операция не найдена }
+        path: { type: string }
+      required: [status, code, message]
+    ValidationError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            fieldErrors:
+              type: array
+              items:
+                type: object
+                properties:
+                  field: { type: string, example: amount }
+                  message: { type: string, example: должно быть больше 0 }
+
+security:
+  - bearerAuth: []
