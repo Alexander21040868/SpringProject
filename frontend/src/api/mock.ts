@@ -13,7 +13,7 @@ const SHORT_MONTHS = ['Янв', 'Фев', 'Мар', 'Апр', 'Май', 'Июн'
 type Granularity = 'DAY' | 'WEEK' | 'MONTH'
 const weekStart = (date: string) => {
   const d = new Date(date + 'T00:00:00')
-  d.setDate(d.getDate() - ((d.getDay() + 6) % 7)) // понедельник недели
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7))
   return iso(d)
 }
 const bucketKey = (date: string, g: Granularity) =>
@@ -21,10 +21,9 @@ const bucketKey = (date: string, g: Granularity) =>
 const bucketLabel = (key: string, g: Granularity) => {
   if (g === 'MONTH') return SHORT_MONTHS[Number(key.slice(5)) - 1]
   const d = new Date(key + 'T00:00:00')
-  return `${d.getDate()}.${d.getMonth() + 1}` // день недели/дня — дата начала
+  return `${d.getDate()}.${d.getMonth() + 1}`
 }
 
-// ---- сущности ----
 const user: User = {
   id: 'u-alex', email: 'alex@family.ru', name: 'Александр', defaultCurrency: 'RUB',
   createdAt: '2025-01-12T10:00:00Z',
@@ -36,7 +35,6 @@ const family: Family = {
 }
 let families: Family[] = [family]
 
-// приглашения, адресованные текущему пользователю (со стороны получателя)
 let myInvitations: MyInvitation[] = [
   { id: 'minv1', familyId: 'fam-2', familyName: 'Бюджет на дачу', role: 'MEMBER', invitedBy: 'Ольга', createdAt: '2026-06-05T10:00:00Z' },
 ]
@@ -75,7 +73,6 @@ const limitAmounts: Record<string, number> = {
   'c-prod': 100000, 'c-trans': 70000, 'c-fun': 45000, 'c-health': 50000, 'c-edu': 40000, 'c-cafe': 30000,
 }
 
-// ---- генерация операций за последние 6 месяцев ----
 let seed = 42
 const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff }
 const pick = <T>(arr: T[]) => arr[Math.floor(rnd() * arr.length)]
@@ -99,13 +96,11 @@ function buildOps(): Operation[] {
     const M = base.getMonth()
     const maxDay = back === 0 ? now.getDate() : new Date(Y, M + 1, 0).getDate()
 
-    // доходы
     ops.push(mk('INCOME', 'c-salary', 'u-alex', between(120000, 132000), new Date(Y, M, 5), 'Зарплата'))
     if (rnd() > 0.3) ops.push(mk('INCOME', 'c-biz', 'u-maria', between(20000, 40000), new Date(Y, M, 12), 'Доход от бизнеса'))
     if (rnd() > 0.5) ops.push(mk('INCOME', 'c-invest', 'u-alex', between(8000, 22000), new Date(Y, M, 18), 'Дивиденды'))
     if (rnd() > 0.6) ops.push(mk('INCOME', 'c-side', 'u-lev', between(6000, 18000), new Date(Y, M, 22), 'Фриланс'))
 
-    // расходы
     const count = between(8, 13)
     for (let i = 0; i < count; i++) {
       const s = pick(expenseSamples)
@@ -125,7 +120,6 @@ function mk(type: OperationType, catId: string, userId: string, amount: number, 
 
 let operations = buildOps()
 
-// ---- фильтры/агрегации ----
 const inRange = (o: Operation, from?: string, to?: string) =>
   (!from || o.date >= from) && (!to || o.date <= to)
 
@@ -148,7 +142,6 @@ function periodOps(p: ReportParams): Operation[] {
 
 const sum = (arr: Operation[]) => arr.reduce((s, o) => s + o.amount, 0)
 
-// ---- реализация ----
 export const mockApi: Api = {
   async register(data) {
     const u: User = { ...user, email: data.email, name: data.name }
@@ -169,6 +162,7 @@ export const mockApi: Api = {
     return wait(f)
   },
   async getFamily(id) { return wait(families.find((f) => f.id === id) ?? family) },
+  async deleteFamily(id) { families = families.filter((f) => f.id !== id); return wait(undefined) },
 
   async listMembers() { return wait(members) },
   async updateMemberRole(_f, memberId, role: Role) {

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Icon, Modal } from '../components/ui'
+import { Icon, Modal, Select } from '../components/ui'
 import { useCategories, useMembers, useOperationMutations } from '../api/queries'
 import type { Operation, OperationType } from '../types'
 
@@ -94,10 +94,8 @@ export default function AddOperationModal({ familyId, existing, onClose }: {
         </div>
         <div>
           <label style={lab}>Участник</label>
-          <select className="input" value={memberId} onChange={(e) => setMemberId(e.target.value)}>
-            <option value="">— я —</option>
-            {members?.map((m) => <option key={m.userId} value={m.userId}>{m.name}</option>)}
-          </select>
+          <Select value={memberId} onChange={setMemberId} ariaLabel="Участник" style={{ display: 'block', width: '100%' }}
+            options={[{ value: '', label: '— я —' }, ...(members ?? []).map((m) => ({ value: m.userId, label: m.name }))]} />
         </div>
       </div>
 

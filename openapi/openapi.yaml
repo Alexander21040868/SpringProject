@@ -34,7 +34,6 @@ tags:
     description: Лимиты бюджета по категориям
 
 paths:
-  # ----------------------------- AUTH -----------------------------
   /auth/register:
     post:
       tags: [Auth]
@@ -104,7 +103,6 @@ paths:
               schema: { $ref: '#/components/schemas/AuthResponse' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  # ----------------------------- USERS -----------------------------
   /users/me:
     get:
       tags: [Users]
@@ -135,7 +133,6 @@ paths:
         '400': { $ref: '#/components/responses/ValidationError' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
-  # ---------------------------- FAMILIES ----------------------------
   /families:
     get:
       tags: [Families]
@@ -209,7 +206,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ----------------------------- MEMBERS -----------------------------
   /families/{familyId}/members:
     parameters:
       - $ref: '#/components/parameters/FamilyId'
@@ -316,7 +312,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ------------------- MY INVITATIONS (получатель) -------------------
   /invitations:
     get:
       tags: [Members]
@@ -363,7 +358,6 @@ paths:
         '204': { description: Отклонено }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ---------------------------- CATEGORIES ----------------------------
   /categories:
     get:
       tags: [Categories]
@@ -435,7 +429,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ---------------------------- OPERATIONS ----------------------------
   /operations:
     get:
       tags: [Operations]
@@ -544,7 +537,6 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
 
-  # ----------------------------- REPORTS -----------------------------
   /reports/summary:
     get:
       tags: [Reports]
@@ -655,7 +647,6 @@ paths:
               schema: { type: string, format: binary }
         '403': { $ref: '#/components/responses/Forbidden' }
 
-  # ------------------------------ LIMITS ------------------------------
   /limits:
     get:
       tags: [Limits]

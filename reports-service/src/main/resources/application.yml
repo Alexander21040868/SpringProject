@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: reports-service
+
+server:
+  port: 8083
+  tomcat:
+    threads:
+      max: 64
+      min-spare: 8
+    accept-count: 200
+
+core:
+  base-url: ${CORE_URL:http://localhost:8082}
+  connect-timeout: 2s
+  read-timeout: 5s
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-please-use-a-long-random-32byte-minimum-key}
+    issuer: finpulse-auth
+
+resilience4j:
+  retry:
+    instances:
+      core:
+        max-attempts: 3
+        wait-duration: 300ms
+        retry-exceptions:
+          - org.example.exception.ServiceUnavailableException
+        ignore-exceptions:
+          - org.example.exception.ForbiddenException
+  circuitbreaker:
+    instances:
+      core:
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        permitted-number-of-calls-in-half-open-state: 3
+        record-exceptions:
+          - org.example.exception.ServiceUnavailableException
+        ignore-exceptions:
+          - org.example.exception.ForbiddenException
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  level:
+    org.example: DEBUG

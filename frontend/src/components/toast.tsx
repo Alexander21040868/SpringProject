@@ -7,7 +7,6 @@ interface ToastItem { id: number; message: string; type: ToastType }
 const listeners = new Set<(t: ToastItem) => void>()
 let seq = 0
 
-/** Глобально показать тост из любого места (в т.ч. вне React — из обработчиков ошибок react-query). */
 export function notify(message: string, type: ToastType = 'info') {
   listeners.forEach((l) => l({ id: ++seq, message, type }))
 }

@@ -6,7 +6,6 @@ const iso = (d: Date) => d.toISOString().slice(0, 10)
 const MONTHS = ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
 const SHORT = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
-/** Произвольный период из двух дат; некорректный порядок дат автоматически меняется местами. */
 export function customPeriod(from: string, to: string): Period {
   let f = from, t = to
   if (f && t && f > t) [f, t] = [t, f]
@@ -39,7 +38,6 @@ export function periodRange(key: PeriodKey, ref = new Date()): Period {
   return { from: iso(from), to: iso(to), label: `${y} год` }
 }
 
-/** Период, охватывающий последние 6 месяцев (для графика потока). */
 export function last6Months(ref = new Date()): Period {
   const from = new Date(ref.getFullYear(), ref.getMonth() - 5, 1)
   return { from: iso(from), to: iso(ref), label: '6 месяцев' }

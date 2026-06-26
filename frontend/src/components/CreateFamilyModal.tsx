@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Modal } from './ui'
+import { Modal, Select } from './ui'
 import { notify } from './toast'
 import { useCreateFamily } from '../api/queries'
 import { useFamilySwitch } from '../family/FamilyContext'
@@ -38,9 +38,8 @@ export default function CreateFamilyModal({ onClose }: { onClose: () => void }) 
       <input className="input" value={name} onChange={(e) => setName(e.target.value)} maxLength={100}
         placeholder="Например: Семья Ивановых" autoFocus style={{ marginBottom: 16 }} />
       <label style={lab}>Валюта</label>
-      <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)}>
-        {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-      </select>
+      <Select value={currency} onChange={(v) => setCurrency(v as Currency)} options={CURRENCIES}
+        ariaLabel="Валюта" style={{ display: 'block', width: '100%' }} />
     </Modal>
   )
 }
