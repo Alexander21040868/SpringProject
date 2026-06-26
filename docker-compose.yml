@@ -1,0 +1,185 @@
+name: finpulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-finpulse}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-finpulse}
+      POSTGRES_DB: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-finpulse}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  auth:
+    build: ./auth-service
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/auth
+      DB_USERNAME: ${DB_USERNAME:-finpulse}
+      DB_PASSWORD: ${DB_PASSWORD:-finpulse}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (cp .env.example .env)}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -XX:+UseSerialGC"
+      LOGGING_LEVEL_ORG_EXAMPLE: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8081"
+    restart: unless-stopped
+
+  core:
+    build: ./core-service
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://postgres:5432/core
+      DB_USERNAME: ${DB_USERNAME:-finpulse}
+      DB_PASSWORD: ${DB_PASSWORD:-finpulse}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (cp .env.example .env)}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -XX:+UseSerialGC"
+      LOGGING_LEVEL_ORG_EXAMPLE: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8082"
+    restart: unless-stopped
+
+  reports:
+    build: ./reports-service
+    environment:
+      CORE_URL: http://core:8082
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env (cp .env.example .env)}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -XX:+UseSerialGC"
+      LOGGING_LEVEL_ORG_EXAMPLE: INFO
+    depends_on:
+      - core
+    expose:
+      - "8083"
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    expose:
+      - "6379"
+    restart: unless-stopped
+
+  gateway:
+    build: ./gateway
+    environment:
+      AUTH_URI: http://auth:8081
+      CORE_URI: http://core:8082
+      REPORTS_URI: http://reports:8083
+      REDIS_HOST: redis
+      RL_AUTH_RPS: ${RL_AUTH_RPS:-5}
+      RL_AUTH_BURST: ${RL_AUTH_BURST:-10}
+      RL_API_RPS: ${RL_API_RPS:-20}
+      RL_API_BURST: ${RL_API_BURST:-40}
+      JAVA_TOOL_OPTIONS: "-Xmx256m -XX:+UseSerialGC"
+      LOGGING_LEVEL_ORG_EXAMPLE: INFO
+    depends_on:
+      - auth
+      - core
+      - reports
+      - redis
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_USE_MOCK: "false"
+    depends_on:
+      - gateway
+    expose:
+      - "80"
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    depends_on:
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    expose:
+      - "9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:11.2.0
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Set GRAFANA_PASSWORD in .env}
+      GF_SERVER_ROOT_URL: https://grafana.fin-pulse.online
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    expose:
+      - "3000"
+    restart: unless-stopped
+
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    command:
+      - '--path.rootfs=/host'
+    pid: host
+    volumes:
+      - /:/host:ro,rslave
+    expose:
+      - "9100"
+    restart: unless-stopped
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    expose:
+      - "8080"
+    restart: unless-stopped
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${DB_USERNAME:-finpulse}:${DB_PASSWORD:-finpulse}@postgres:5432/postgres?sslmode=disable"
+    depends_on:
+      - postgres
+    expose:
+      - "9187"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+  prometheus_data:
+  grafana_data:

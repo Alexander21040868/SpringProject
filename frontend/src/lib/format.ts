@@ -6,7 +6,6 @@ export function currencySymbol(c: Currency = 'RUB') {
   return SYMBOL[c] ?? '₽'
 }
 
-/** 128400 -> "128 400 ₽" (со знаком при signed=true) */
 export function money(value: number, currency: Currency = 'RUB', signed = false): string {
   const abs = Math.abs(Math.round(value))
   const num = abs.toLocaleString('ru-RU')
@@ -18,7 +17,6 @@ export function money(value: number, currency: Currency = 'RUB', signed = false)
   return `${num} ${sym}`
 }
 
-/** Компактно: 128400 -> "128k", 1180000 -> "1.2M" */
 export function moneyShort(value: number, currency: Currency = 'RUB'): string {
   const sym = currencySymbol(currency)
   const abs = Math.abs(value)
@@ -36,7 +34,6 @@ export function percent(value: number, digits = 0): string {
 const MONTHS = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
 const WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
 
-/** "2026-06-05" -> "5 июня · четверг" / "Сегодня" / "Вчера" */
 export function humanDay(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
   const today = new Date()
@@ -47,7 +44,6 @@ export function humanDay(iso: string): string {
   return `${d.getDate()} ${MONTHS[d.getMonth()]} · ${WEEKDAYS[d.getDay()]}`
 }
 
-/** "2026-06-05" -> "05.06.2026" */
 export function shortDate(iso: string): string {
   const d = new Date(iso + 'T00:00:00')
   return d.toLocaleDateString('ru-RU')

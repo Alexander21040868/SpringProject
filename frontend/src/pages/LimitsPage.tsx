@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Icon, LIMIT_COLOR, LIMIT_LABEL, Loader, Modal, Ring } from '../components/ui'
-import { useLimits, useSetLimits } from '../api/queries'
+import { useCategories, useLimits, useSetLimits } from '../api/queries'
 import { useCurrentFamily } from '../family/FamilyContext'
 import { money } from '../lib/format'
 import type { LimitStatus } from '../types'
@@ -69,32 +69,40 @@ export default function LimitsPage() {
 
 function EditLimitsModal({ familyId, limits, onClose }: { familyId: string; limits: LimitStatus[]; onClose: () => void }) {
   const setLimits = useSetLimits(familyId)
+  const { data: categories } = useCategories(familyId, 'EXPENSE')
+  const cats = categories ?? []
   const [values, setValues] = useState<Record<string, string>>({})
+
   useEffect(() => {
-    setValues(Object.fromEntries(limits.map((l) => [l.categoryId, String(l.limit)])))
+    setValues(Object.fromEntries(limits.filter((l) => l.limit > 0).map((l) => [l.categoryId, String(l.limit)])))
   }, [limits])
 
   async function save() {
-    await setLimits.mutateAsync(limits.map((l) => ({
-      categoryId: l.categoryId,
-      amount: Number((values[l.categoryId] ?? '0').replace(/\s/g, '')) || 0,
-    })))
+    const payload = cats
+      .map((c) => ({ categoryId: c.id, amount: Number((values[c.id] ?? '0').replace(/\s/g, '')) || 0 }))
+      .filter((x) => x.amount > 0)
+    await setLimits.mutateAsync(payload)
     onClose()
   }
 
   return (
     <Modal title="Лимиты по категориям" onClose={onClose}
-      footer={<button className="btn btn-primary" style={{ width: '100%' }} onClick={save} disabled={setLimits.isPending}>
+      footer={<button className="btn btn-primary" style={{ width: '100%' }} onClick={save} disabled={setLimits.isPending || cats.length === 0}>
         {setLimits.isPending ? <span className="spinner" style={{ width: 15, height: 15 }} /> : 'Сохранить лимиты'}
       </button>}>
-      {limits.map((l) => (
-        <div key={l.categoryId} className="row" style={{ gap: 11, marginBottom: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: l.color + '24', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <Icon name={l.icon} size={17} color={l.color} />
+      {cats.length === 0 && (
+        <p className="hint" style={{ fontSize: 13, textAlign: 'center', padding: '8px 0' }}>
+          Сначала создайте категории расходов на странице «Категории».
+        </p>
+      )}
+      {cats.map((c) => (
+        <div key={c.id} className="row" style={{ gap: 11, marginBottom: 12 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: (c.color ?? '#888') + '24', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Icon name={c.icon} size={17} color={c.color} />
           </div>
-          <span style={{ flex: 1, fontSize: 13 }}>{l.name}</span>
-          <input className="input" style={{ width: 120, height: 34 }} inputMode="numeric"
-            value={values[l.categoryId] ?? ''} onChange={(e) => setValues((v) => ({ ...v, [l.categoryId]: e.target.value }))} />
+          <span style={{ flex: 1, fontSize: 13 }}>{c.name}</span>
+          <input className="input" style={{ width: 120, height: 34 }} inputMode="numeric" placeholder="0"
+            value={values[c.id] ?? ''} onChange={(e) => setValues((v) => ({ ...v, [c.id]: e.target.value }))} />
         </div>
       ))}
     </Modal>

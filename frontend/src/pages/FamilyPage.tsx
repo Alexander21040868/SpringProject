@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import PageHeader from '../components/PageHeader'
-import { Avatar, ConfirmDialog, Icon, IconButton, Loader, Modal, RoleBadge } from '../components/ui'
-import { useInvitations, useMemberMutations, useMembers } from '../api/queries'
-import { useCurrentFamily } from '../family/FamilyContext'
+import { Avatar, ConfirmDialog, Icon, IconButton, Loader, Modal, RoleBadge, Select } from '../components/ui'
+import { useDeleteFamily, useFamilies, useInvitations, useMemberMutations, useMembers } from '../api/queries'
+import { useCurrentFamily, useFamilySwitch } from '../family/FamilyContext'
+import { notify } from '../components/toast'
 import { money } from '../lib/format'
 import type { Member, Role } from '../types'
 
@@ -20,6 +21,10 @@ export default function FamilyPage() {
   const [inviting, setInviting] = useState(false)
   const [editMember, setEditMember] = useState<Member | null>(null)
   const [removing, setRemoving] = useState<Member | null>(null)
+  const [deletingFamily, setDeletingFamily] = useState(false)
+  const { data: families } = useFamilies()
+  const { setFamilyId } = useFamilySwitch()
+  const del = useDeleteFamily()
 
   if (isLoading || !family) return <Loader />
   const isOwner = family.myRole === 'OWNER'
@@ -77,6 +82,18 @@ export default function FamilyPage() {
             ))}
           </div>
         </div>
+
+        {isOwner && (
+          <div className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderColor: 'var(--danger)' }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>Удалить семью</div>
+              <div className="hint" style={{ fontSize: 12 }}>Безвозвратно удалит семью со всеми операциями, категориями и лимитами.</div>
+            </div>
+            <button className="btn btn-sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger)' }} onClick={() => setDeletingFamily(true)}>
+              <Icon name="trash" size={15} /> Удалить
+            </button>
+          </div>
+        )}
       </div>
 
       {inviting && <InviteModal onClose={() => setInviting(false)} onInvite={(email, role) => { m.invite.mutate({ email, role }); setInviting(false) }} />}
@@ -91,6 +108,19 @@ export default function FamilyPage() {
           confirmLabel="Удалить из семьи"
           onConfirm={() => m.removeMember.mutate(removing.id)} onClose={() => setRemoving(null)} />
       )}
+      {deletingFamily && (
+        <ConfirmDialog title="Удалить семью?"
+          message={`«${family.name}» и все её данные — операции, категории, лимиты, участники — будут удалены безвозвратно.`}
+          confirmLabel="Удалить семью"
+          onConfirm={() => del.mutate(family.id, {
+            onSuccess: () => {
+              const next = families?.find((f) => f.id !== family.id)
+              if (next) setFamilyId(next.id)
+              notify(`Семья «${family.name}» удалена`, 'success')
+            },
+          })}
+          onClose={() => setDeletingFamily(false)} />
+      )}
     </>
   )
 }
@@ -104,9 +134,8 @@ function InviteModal({ onClose, onInvite }: { onClose: () => void; onInvite: (em
       <label style={lab}>Email</label>
       <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@family.ru" style={{ marginBottom: 14 }} />
       <label style={lab}>Роль</label>
-      <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-        {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-      </select>
+      <Select value={role} onChange={(v) => setRole(v as Role)} options={ROLES}
+        ariaLabel="Роль" style={{ display: 'block', width: '100%' }} />
     </Modal>
   )
 }
@@ -124,9 +153,9 @@ function EditMemberModal({ member, onClose, onRole, onRemove }: {
         </div>
       }>
       <label style={lab}>Роль</label>
-      <select className="input" value={role} onChange={(e) => setRole(e.target.value as Role)}>
-        {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label} — {r.desc}</option>)}
-      </select>
+      <Select value={role} onChange={(v) => setRole(v as Role)}
+        options={ROLES.map((r) => ({ value: r.value, label: `${r.label} — ${r.desc}` }))}
+        ariaLabel="Роль" style={{ display: 'block', width: '100%' }} />
     </Modal>
   )
 }

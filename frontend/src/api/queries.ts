@@ -3,12 +3,10 @@ import { api } from './index'
 import type { CategoryInput, LimitInput } from './contract'
 import type { Currency, OperationFilter, OperationInput, ReportParams, Role } from '../types'
 
-// ---- profile ----
 export const useMe = () => useQuery({ queryKey: ['me'], queryFn: () => api.getMe() })
 export const useUpdateMe = () =>
   useMutation({ mutationFn: (data: { name?: string; defaultCurrency?: Currency }) => api.updateMe(data) })
 
-// ---- my invitations (получатель) ----
 export const useMyInvitations = () =>
   useQuery({ queryKey: ['myInvitations'], queryFn: () => api.listMyInvitations() })
 
@@ -24,7 +22,6 @@ export function useInvitationActions() {
   }
 }
 
-// ---- families ----
 export const useFamilies = () => useQuery({ queryKey: ['families'], queryFn: () => api.listFamilies() })
 
 export function useCreateFamily() {
@@ -35,7 +32,14 @@ export function useCreateFamily() {
   })
 }
 
-// ---- members ----
+export function useDeleteFamily() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (familyId: string) => api.deleteFamily(familyId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['families'] }),
+  })
+}
+
 export const useMembers = (familyId?: string) =>
   useQuery({ queryKey: ['members', familyId], queryFn: () => api.listMembers(familyId!), enabled: !!familyId })
 
@@ -56,7 +60,6 @@ export function useMemberMutations(familyId: string) {
   }
 }
 
-// ---- categories ----
 export const useCategories = (familyId?: string, type?: 'INCOME' | 'EXPENSE') =>
   useQuery({ queryKey: ['categories', familyId, type], queryFn: () => api.listCategories(familyId!, type), enabled: !!familyId })
 
@@ -70,7 +73,6 @@ export function useCategoryMutations(familyId: string) {
   }
 }
 
-// ---- operations ----
 export const useOperations = (filter: OperationFilter) =>
   useQuery({ queryKey: ['operations', filter], queryFn: () => api.listOperations(filter), enabled: !!filter.familyId })
 
@@ -88,7 +90,6 @@ export function useOperationMutations() {
   }
 }
 
-// ---- reports ----
 export const useSummary = (p: ReportParams) =>
   useQuery({ queryKey: ['reports', 'summary', p], queryFn: () => api.reportSummary(p), enabled: !!p.familyId })
 export const useByCategory = (p: ReportParams) =>
@@ -98,7 +99,6 @@ export const useByMember = (p: ReportParams) =>
 export const useCashflow = (p: ReportParams) =>
   useQuery({ queryKey: ['reports', 'cashflow', p], queryFn: () => api.reportCashflow(p), enabled: !!p.familyId })
 
-// ---- limits ----
 export const useLimits = (familyId?: string, month?: string) =>
   useQuery({ queryKey: ['limits', familyId, month], queryFn: () => api.getLimits(familyId!, month), enabled: !!familyId })
 

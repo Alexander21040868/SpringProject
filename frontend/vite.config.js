@@ -5,7 +5,6 @@ export default defineConfig({
     server: {
         port: 5173,
         proxy: {
-            // В реальном режиме проксируем на API Gateway, чтобы не ловить CORS в деве.
             '/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,

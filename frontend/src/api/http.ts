@@ -20,7 +20,6 @@ http.interceptors.response.use(
       tokens.clear()
       location.href = '/login'
     }
-    // Нормализуем ошибку к единому формату из контракта.
     const data = error.response?.data
     const normalized: ApiError = data && (data as ApiError).code
       ? (data as ApiError)
@@ -50,6 +49,7 @@ export const httpApi: Api = {
   async listFamilies() { return (await http.get('/families')).data },
   async createFamily(data) { return (await http.post('/families', data)).data },
   async getFamily(id) { return (await http.get(`/families/${id}`)).data },
+  async deleteFamily(id) { await http.delete(`/families/${id}`) },
 
   async listMembers(familyId) { return (await http.get(`/families/${familyId}/members`)).data },
   async updateMemberRole(familyId, memberId, role) {

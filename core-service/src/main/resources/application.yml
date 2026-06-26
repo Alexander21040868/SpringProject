@@ -1,0 +1,61 @@
+spring:
+  application:
+    name: core-service
+
+  datasource:
+    url: jdbc:h2:mem:core;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 5
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+
+server:
+  port: 8082
+  tomcat:
+    threads:
+      max: 64
+      min-spare: 8
+    accept-count: 200
+
+auth:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-change-me-please-use-a-long-random-32byte-minimum-key}
+    issuer: finpulse-auth
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+logging:
+  level:
+    org.example: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/core}
+    username: ${DB_USERNAME:core}
+    password: ${DB_PASSWORD:core}
+    driver-class-name: org.postgresql.Driver

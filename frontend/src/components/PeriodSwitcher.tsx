@@ -9,7 +9,6 @@ const BASE: { key: PeriodKey; label: string }[] = [
 interface Props {
   value: PeriodKey
   onChange: (k: PeriodKey) => void
-  /** Если переданы — добавляется вкладка «Период» с выбором двух дат. */
   customFrom?: string
   customTo?: string
   onCustomChange?: (from: string, to: string) => void

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
-import { Avatar, Icon, Loader } from '../components/ui'
+import { Avatar, Icon, Loader, Select } from '../components/ui'
 import { notify } from '../components/toast'
 import { useMe, useUpdateMe } from '../api/queries'
 import { useAuth } from '../auth/AuthContext'
@@ -58,9 +58,8 @@ export default function SettingsPage() {
           <input className="input" value={me.email} disabled style={{ marginBottom: 16, opacity: 0.7 }} />
 
           <label style={lab}>Валюта по умолчанию</label>
-          <select className="input" value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} style={{ marginBottom: 18 }}>
-            {CURRENCIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
+          <Select value={currency} onChange={(v) => setCurrency(v as Currency)} options={CURRENCIES}
+            ariaLabel="Валюта по умолчанию" style={{ display: 'block', width: '100%', marginBottom: 18 }} />
 
           <button className="btn btn-primary" disabled={!dirty || !name.trim() || update.isPending} onClick={save}>
             {update.isPending ? <span className="spinner" style={{ width: 15, height: 15 }} /> : <><Icon name="device-floppy" size={16} /> Сохранить</>}
@@ -71,7 +70,7 @@ export default function SettingsPage() {
           <div className="spread">
             <div>
               <div style={{ fontSize: 13, fontWeight: 500 }}>Выйти из аккаунта</div>
-              {/*<div className="hint" style={{ fontSize: 12 }}>Сессия завершится, токен будет удалён</div>*/}
+              {}
             </div>
             <button className="btn" style={{ color: 'var(--danger)' }} onClick={() => { logout(); navigate('/login') }}>
               <Icon name="logout" size={16} /> Выйти

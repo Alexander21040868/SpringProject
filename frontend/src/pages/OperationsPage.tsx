@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import PageHeader from '../components/PageHeader'
-import { Avatar, ConfirmDialog, Icon, IconButton, Loader } from '../components/ui'
+import { Avatar, ConfirmDialog, Icon, IconButton, Loader, Select } from '../components/ui'
 import AddOperationModal from './AddOperationModal'
 import { useCategories, useMembers, useOperationMutations, useOperations } from '../api/queries'
 import { useCurrentFamily } from '../family/FamilyContext'
@@ -50,14 +50,10 @@ export default function OperationsPage() {
           <Chip on={type === 'INCOME'} onClick={() => { setType('INCOME'); setPage(0) }}><Icon name="circle-plus" size={14} /> Доходы</Chip>
           <Chip on={type === 'EXPENSE'} onClick={() => { setType('EXPENSE'); setPage(0) }}><Icon name="circle-minus" size={14} /> Расходы</Chip>
           <span style={{ width: 1, height: 18, background: 'var(--border-strong)', margin: '0 3px' }} />
-          <select className="input" style={{ width: 'auto', height: 32, fontSize: 12 }} value={categoryId} onChange={(e) => { setCategoryId(e.target.value); setPage(0) }}>
-            <option value="">Все категории</option>
-            {categories?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <select className="input" style={{ width: 'auto', height: 32, fontSize: 12 }} value={memberId} onChange={(e) => { setMemberId(e.target.value); setPage(0) }}>
-            <option value="">Все участники</option>
-            {members?.map((m) => <option key={m.userId} value={m.userId}>{m.name}</option>)}
-          </select>
+          <Select size="sm" value={categoryId} onChange={(v) => { setCategoryId(v); setPage(0) }} ariaLabel="Категория"
+            options={[{ value: '', label: 'Все категории' }, ...(categories ?? []).map((c) => ({ value: c.id, label: c.name, icon: c.icon, color: c.color }))]} />
+          <Select size="sm" value={memberId} onChange={(v) => { setMemberId(v); setPage(0) }} ariaLabel="Участник"
+            options={[{ value: '', label: 'Все участники' }, ...(members ?? []).map((m) => ({ value: m.userId, label: m.name }))]} />
         </div>
 
         <div className="grid" style={{ gridTemplateColumns: 'repeat(3,1fr)' }}>

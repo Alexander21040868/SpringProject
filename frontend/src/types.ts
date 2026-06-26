@@ -1,4 +1,3 @@
-// Типы соответствуют схемам из openapi/openapi.yaml
 
 export type Role = 'OWNER' | 'MEMBER' | 'VIEWER'
 export type OperationType = 'INCOME' | 'EXPENSE'
@@ -50,7 +49,6 @@ export interface Invitation {
   createdAt: string
 }
 
-/** Приглашение, адресованное текущему пользователю (со стороны получателя). */
 export interface MyInvitation {
   id: string
   familyId: string
@@ -148,7 +146,6 @@ export interface ApiError {
   fieldErrors?: { field: string; message: string }[]
 }
 
-// --- query params ---
 export interface OperationFilter {
   familyId: string
   type?: OperationType

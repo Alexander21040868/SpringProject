@@ -13,7 +13,6 @@ export function FamilyProvider({ children }: { children: ReactNode }) {
   return <FamilyCtx.Provider value={{ familyId, setFamilyId }}>{children}</FamilyCtx.Provider>
 }
 
-/** Текущая выбранная семья (или первая доступная). */
 export function useCurrentFamily(): { family?: Family; isLoading: boolean } {
   const { familyId } = useContext(FamilyCtx)
   const { data, isLoading } = useFamilies()
