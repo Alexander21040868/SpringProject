@@ -76,6 +76,11 @@ public class CategoryService {
         Category category = categoryRepository.findById(categoryId)
                 .orElseThrow(NotFoundException::category);
         access.requireWriter(category.getFamily().getId(), userId);
+        if (category.getType() != request.type()
+                && operationRepository.existsByCategory_Id(categoryId)) {
+            throw new ConflictException("CATEGORY_TYPE_LOCKED",
+                    "Нельзя менять тип категории, по которой уже есть операции");
+        }
         category.setName(request.name());
         category.setType(request.type());
         category.setIcon(request.icon());

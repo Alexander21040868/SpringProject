@@ -45,7 +45,10 @@ public class ReportService {
 
         BigDecimal incomeChangePct = incomeChangePct(token, familyId, from, to, memberIds, income);
 
-        return new SummaryReportDto(from, to, income, expense, savings, savings, savingsRate, incomeChangePct);
+        // balance и savings в отчёте за период — одно и то же (доходы − расходы).
+        // Передаём через именованную переменную, чтобы не было «магического» дублирования позиций.
+        BigDecimal balance = savings;
+        return new SummaryReportDto(from, to, income, expense, balance, savings, savingsRate, incomeChangePct);
     }
 
     private CoreClient.Totals periodTotals(String token, UUID familyId, LocalDate from, LocalDate to,

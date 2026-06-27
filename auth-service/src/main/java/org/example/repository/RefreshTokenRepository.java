@@ -19,6 +19,11 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID
     @Query("update RefreshToken t set t.revoked = true where t.user = :user and t.revoked = false")
     int revokeAllByUser(@Param("user") User user);
 
+    /** Атомарно гасит токен. Возвращает число затронутых строк: 0 = токен уже был отозван (гонка/повтор). */
+    @Modifying
+    @Query("update RefreshToken t set t.revoked = true where t.id = :id and t.revoked = false")
+    int revokeIfActive(@Param("id") UUID id);
+
     @Modifying
     @Query("delete from RefreshToken t where t.expiresAt < :now")
     int deleteAllExpired(@Param("now") Instant now);

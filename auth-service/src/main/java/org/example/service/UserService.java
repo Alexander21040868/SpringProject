@@ -24,6 +24,11 @@ public class UserService {
         return UserDto.from(findOrThrow(id));
     }
 
+    @Transactional(readOnly = true)
+    public boolean existsByEmail(String email) {
+        return email != null && userRepository.existsByEmail(User.normalizeEmail(email));
+    }
+
     @Transactional
     public UserDto update(UUID id, UpdateUserRequest request) {
         User user = findOrThrow(id);

@@ -28,6 +28,23 @@ public interface OperationRepository extends JpaRepository<Operation, UUID>,
                          @Param("to") LocalDate to);
 
     @Query("""
+            select coalesce(sum(o.amount), 0) from Operation o
+            where o.family.id = :familyId
+              and o.type = :type
+              and (:categoryId is null or o.category.id = :categoryId)
+              and (:memberUserId is null or o.memberUserId = :memberUserId)
+              and o.date >= :from and o.date <= :to
+              and (:search is null or lower(o.description) like :search)
+            """)
+    BigDecimal sumAmountFiltered(@Param("familyId") UUID familyId,
+                                @Param("type") org.example.entity.OperationType type,
+                                @Param("categoryId") UUID categoryId,
+                                @Param("memberUserId") UUID memberUserId,
+                                @Param("from") LocalDate from,
+                                @Param("to") LocalDate to,
+                                @Param("search") String search);
+
+    @Query("""
             select o.category.id, count(o), coalesce(sum(o.amount), 0)
             from Operation o
             where o.family.id = :familyId
@@ -36,14 +53,15 @@ public interface OperationRepository extends JpaRepository<Operation, UUID>,
     List<Object[]> aggregateByCategory(@Param("familyId") UUID familyId);
 
     @Query("""
-            select coalesce(sum(o.amount), 0) from Operation o
-            where o.category.id = :categoryId
+            select o.category.id, coalesce(sum(o.amount), 0) from Operation o
+            where o.family.id = :familyId
               and o.type = org.example.entity.OperationType.EXPENSE
               and o.date >= :from and o.date <= :to
+            group by o.category.id
             """)
-    BigDecimal sumExpenseByCategory(@Param("categoryId") UUID categoryId,
-                                    @Param("from") LocalDate from,
-                                    @Param("to") LocalDate to);
+    List<Object[]> sumExpenseByCategoryGrouped(@Param("familyId") UUID familyId,
+                                               @Param("from") LocalDate from,
+                                               @Param("to") LocalDate to);
 
     @EntityGraph(attributePaths = "category")
     Optional<Operation> findByIdAndFamily_Id(UUID id, UUID familyId);

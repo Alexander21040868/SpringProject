@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Avatar, Icon, IconButton, RoleBadge } from './ui'
 import CreateFamilyModal from './CreateFamilyModal'
+import InvitationsBanner from './InvitationsBanner'
 import { useAuth } from '../auth/AuthContext'
 import { useFamilies } from '../api/queries'
 import { useCurrentFamily, useFamilySwitch } from '../family/FamilyContext'
@@ -121,15 +122,21 @@ export default function Layout() {
 
         <main style={{ flex: 1, minWidth: 0, maxWidth: 1180, width: '100%', margin: '0 auto', padding: '0 0 40px' }}>
           {noFamilies ? (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 14, padding: '80px 24px', minHeight: '60vh' }}>
-              <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
-                <Icon name="users-group" size={28} />
+            <div style={{ padding: '24px 24px 0' }}>
+              {/* Приглашения показываем и без семьи — иначе приглашённому негде их принять */}
+              <div style={{ maxWidth: 560, margin: '0 auto' }}>
+                <InvitationsBanner />
               </div>
-              <div>
-                <h2 style={{ fontSize: 18 }}>У вас пока нет семьи</h2>
-                <p className="hint" style={{ fontSize: 13, marginTop: 6, maxWidth: 320 }}>Создайте семью, чтобы вести общий бюджет, или дождитесь приглашения от близких.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', gap: 14, padding: '56px 0', minHeight: '50vh' }}>
+                <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                  <Icon name="users-group" size={28} />
+                </div>
+                <div>
+                  <h2 style={{ fontSize: 18 }}>У вас пока нет семьи</h2>
+                  <p className="hint" style={{ fontSize: 13, marginTop: 6, maxWidth: 320 }}>Создайте семью, чтобы вести общий бюджет, или дождитесь приглашения от близких.</p>
+                </div>
+                <button className="btn btn-primary" onClick={() => setCreateOpen(true)}><Icon name="plus" size={16} /> Создать семью</button>
               </div>
-              <button className="btn btn-primary" onClick={() => setCreateOpen(true)}><Icon name="plus" size={16} /> Создать семью</button>
             </div>
           ) : (
             <Outlet context={{ family }} />

@@ -49,6 +49,7 @@ public class ReportController {
                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                     @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                     @RequestParam(required = false) List<UUID> memberIds) {
+        requireValidRange(from, to);
         return reportService.summary(token(authorization), familyId, from, to, members(memberIds));
     }
 
@@ -59,6 +60,7 @@ public class ReportController {
                                              @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                              @RequestParam(required = false) List<UUID> memberIds,
                                              @RequestParam(required = false) OperationType type) {
+        requireValidRange(from, to);
         return reportService.byCategory(token(authorization), familyId, from, to, members(memberIds), type);
     }
 
@@ -67,8 +69,10 @@ public class ReportController {
                                          @RequestParam UUID familyId,
                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+                                         @RequestParam(required = false) List<UUID> memberIds,
                                          @RequestParam(required = false) OperationType type) {
-        return reportService.byMember(token(authorization), familyId, from, to, Collections.emptySet(), type);
+        requireValidRange(from, to);
+        return reportService.byMember(token(authorization), familyId, from, to, members(memberIds), type);
     }
 
     @GetMapping("/cashflow")
@@ -78,6 +82,7 @@ public class ReportController {
                                            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                            @RequestParam(required = false) List<UUID> memberIds,
                                            @RequestParam(required = false) Granularity granularity) {
+        requireValidRange(from, to);
         return reportService.cashflow(token(authorization), familyId, from, to, members(memberIds), granularity);
     }
 
@@ -88,6 +93,7 @@ public class ReportController {
                                          @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
                                          @RequestParam(required = false) List<UUID> memberIds,
                                          @RequestParam String format) {
+        requireValidRange(from, to);
         String fmt = format == null ? "" : format.toLowerCase();
         List<OperationView> ops = reportService.operationsForExport(
                 token(authorization), familyId, from, to, members(memberIds));
@@ -123,5 +129,11 @@ public class ReportController {
 
     private Set<UUID> members(List<UUID> memberIds) {
         return memberIds == null ? Collections.emptySet() : Set.copyOf(memberIds);
+    }
+
+    private void requireValidRange(LocalDate from, LocalDate to) {
+        if (from.isAfter(to)) {
+            throw new BadRequestException("INVALID_RANGE", "Дата начала не может быть позже даты конца");
+        }
     }
 }
