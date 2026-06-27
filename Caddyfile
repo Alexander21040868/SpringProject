@@ -1,5 +1,21 @@
 
+# Cloudflare Origin Certificate (выпущен в дашборде Cloudflare, файлы лежат на сервере вне git).
+# SAN покрывает fin-pulse.online и *.fin-pulse.online — годен для всех хостов ниже.
+(cf_origin_tls) {
+    tls /etc/ssl/cloudflare/origin.pem /etc/ssl/cloudflare/origin.key {
+        # Authenticated Origin Pulls: пускаем только клиента с сертификатом Cloudflare.
+        # Прямые подключения по IP в обход Cloudflare обрываются на TLS-хендшейке.
+        client_auth {
+            mode require_and_verify
+            trust_pool file {
+                pem_file /etc/ssl/cloudflare/authenticated_origin_pull_ca.pem
+            }
+        }
+    }
+}
+
 fin-pulse.online, www.fin-pulse.online {
+    import cf_origin_tls
     encode gzip
 
     header {
@@ -14,6 +30,7 @@ fin-pulse.online, www.fin-pulse.online {
 }
 
 grafana.fin-pulse.online {
+    import cf_origin_tls
     encode gzip
     reverse_proxy grafana:3000
 }

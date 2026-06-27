@@ -44,7 +44,7 @@ export default function CategoriesPage() {
 
       {deleting && (
         <ConfirmDialog title="Удалить категорию?"
-          message={`Категория «${deleting.name}» будет удалена. Операции в ней останутся, но потеряют категорию.`}
+          message={`Категория «${deleting.name}» будет удалена. Удалить можно только пустую категорию — если по ней есть операции, удаление будет отклонено.`}
           onConfirm={() => mut.remove.mutate(deleting.id)} onClose={() => setDeleting(null)} />
       )}
     </>
