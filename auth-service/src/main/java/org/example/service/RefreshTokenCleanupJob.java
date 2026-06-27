@@ -20,7 +20,7 @@ public class RefreshTokenCleanupJob {
         this.repository = repository;
     }
 
-    @Scheduled(cron = "0 0 3 * * *")
+    @Scheduled(cron = "0 0 3 * * *", zone = "UTC")
     @Transactional
     public void purgeExpired() {
         int removed = repository.deleteAllExpired(Instant.now());

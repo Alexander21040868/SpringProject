@@ -10,7 +10,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/users")
@@ -25,6 +28,12 @@ public class UserController {
     @GetMapping("/me")
     public UserDto getMe(@AuthenticationPrincipal AuthPrincipal principal) {
         return userService.getById(principal.id());
+    }
+
+    /** Проверка, что пользователь с таким email зарегистрирован. Используется core при приглашении. */
+    @GetMapping("/exists")
+    public Map<String, Boolean> exists(@RequestParam String email) {
+        return Map.of("exists", userService.existsByEmail(email));
     }
 
     @PatchMapping("/me")

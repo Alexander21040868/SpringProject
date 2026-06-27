@@ -10,6 +10,7 @@ import org.example.entity.Invitation;
 import org.example.entity.InvitationStatus;
 import org.example.entity.Membership;
 import org.example.entity.Role;
+import org.example.client.AuthClient;
 import org.example.exception.BadRequestException;
 import org.example.exception.ConflictException;
 import org.example.exception.ForbiddenException;
@@ -30,15 +31,18 @@ public class MemberService {
     private final InvitationRepository invitationRepository;
     private final AccessService access;
     private final FamilyService familyService;
+    private final AuthClient authClient;
 
     public MemberService(MembershipRepository membershipRepository,
                          InvitationRepository invitationRepository,
                          AccessService access,
-                         FamilyService familyService) {
+                         FamilyService familyService,
+                         AuthClient authClient) {
         this.membershipRepository = membershipRepository;
         this.invitationRepository = invitationRepository;
         this.access = access;
         this.familyService = familyService;
+        this.authClient = authClient;
     }
 
     @Transactional(readOnly = true)
@@ -80,11 +84,16 @@ public class MemberService {
     }
 
     @Transactional
-    public InvitationDto createInvitation(UUID familyId, AuthPrincipal principal, CreateInvitationRequest request) {
+    public InvitationDto createInvitation(UUID familyId, AuthPrincipal principal,
+                                          CreateInvitationRequest request, String bearerToken) {
         Membership owner = access.requireOwner(familyId, principal.id());
         String email = request.email().trim().toLowerCase();
         if (invitationRepository.existsByFamily_IdAndEmailAndStatus(familyId, email, InvitationStatus.PENDING)) {
             throw new ConflictException("INVITATION_EXISTS", "Приглашение на этот email уже отправлено");
+        }
+        if (!authClient.emailRegistered(email, bearerToken)) {
+            throw new BadRequestException("USER_NOT_REGISTERED",
+                    "Пользователь с таким email не зарегистрирован в Финпульсе");
         }
         Invitation invitation = new Invitation(owner.getFamily(), email, request.role(),
                 principal.id(), principal.name());

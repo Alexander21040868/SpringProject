@@ -15,8 +15,9 @@ const ROLES: { value: Role; label: string; desc: string; icon: string }[] = [
 
 export default function FamilyPage() {
   const { family, isLoading } = useCurrentFamily()
+  const isOwnerRole = family?.myRole === 'OWNER'
   const { data: members } = useMembers(family?.id)
-  const { data: invitations } = useInvitations(family?.id)
+  const { data: invitations } = useInvitations(family?.id, isOwnerRole)
   const m = useMemberMutations(family?.id ?? '')
   const [inviting, setInviting] = useState(false)
   const [editMember, setEditMember] = useState<Member | null>(null)

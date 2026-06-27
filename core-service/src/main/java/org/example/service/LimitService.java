@@ -20,7 +20,9 @@ import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -52,8 +54,15 @@ public class LimitService {
     public List<LimitStatusDto> getLimits(UUID familyId, UUID userId, String month) {
         access.requireMember(familyId, userId);
         YearMonth ym = parseMonth(month);
+        LocalDate from = ym.atDay(1);
+        LocalDate to = ym.atEndOfMonth();
+
+        Map<UUID, BigDecimal> spentByCategory = new HashMap<>();
+        for (Object[] row : operationRepository.sumExpenseByCategoryGrouped(familyId, from, to)) {
+            spentByCategory.put((UUID) row[0], toBigDecimal(row[1]));
+        }
         return limitRepository.findByFamily_Id(familyId).stream()
-                .map(limit -> toStatus(limit, ym))
+                .map(limit -> toStatus(limit, spentByCategory))
                 .toList();
     }
 
@@ -76,11 +85,9 @@ public class LimitService {
         return getLimits(familyId, userId, null);
     }
 
-    private LimitStatusDto toStatus(Limit limit, YearMonth ym) {
-        LocalDate from = ym.atDay(1);
-        LocalDate to = ym.atEndOfMonth();
+    private LimitStatusDto toStatus(Limit limit, Map<UUID, BigDecimal> spentByCategory) {
         Category category = limit.getCategory();
-        BigDecimal spent = operationRepository.sumExpenseByCategory(category.getId(), from, to);
+        BigDecimal spent = spentByCategory.getOrDefault(category.getId(), BigDecimal.ZERO);
         BigDecimal limitAmount = limit.getAmount();
 
         BigDecimal percent = limitAmount.signum() == 0
@@ -99,6 +106,10 @@ public class LimitService {
             return "WARNING";
         }
         return "OK";
+    }
+
+    private static BigDecimal toBigDecimal(Object value) {
+        return value instanceof BigDecimal bd ? bd : new BigDecimal(value.toString());
     }
 
     private YearMonth parseMonth(String month) {

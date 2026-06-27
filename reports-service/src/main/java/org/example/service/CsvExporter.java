@@ -37,9 +37,16 @@ public class CsvExporter {
         if (value == null || value.isEmpty()) {
             return "";
         }
-        if (value.contains(SEP) || value.contains("\"") || value.contains("\n") || value.contains("\r")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
+        // Защита от CSV-инъекции: значения, начинающиеся с = + - @ (или tab/CR), Excel трактует
+        // как формулу. Префиксуем апострофом, чтобы ячейка осталась текстом.
+        String safe = value;
+        char first = safe.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r') {
+            safe = "'" + safe;
         }
-        return value;
+        if (safe.contains(SEP) || safe.contains("\"") || safe.contains("\n") || safe.contains("\r")) {
+            return "\"" + safe.replace("\"", "\"\"") + "\"";
+        }
+        return safe;
     }
 }

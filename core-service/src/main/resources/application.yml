@@ -35,6 +35,11 @@ auth:
     secret: ${JWT_SECRET:dev-secret-change-me-please-use-a-long-random-32byte-minimum-key}
     issuer: finpulse-auth
 
+auth-service:
+  base-url: ${AUTH_URL:http://localhost:8081/api/v1}
+  connect-timeout: 2s
+  read-timeout: 5s
+
 management:
   endpoints:
     web:

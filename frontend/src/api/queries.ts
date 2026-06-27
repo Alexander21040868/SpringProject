@@ -8,7 +8,7 @@ export const useUpdateMe = () =>
   useMutation({ mutationFn: (data: { name?: string; defaultCurrency?: Currency }) => api.updateMe(data) })
 
 export const useMyInvitations = () =>
-  useQuery({ queryKey: ['myInvitations'], queryFn: () => api.listMyInvitations() })
+  useQuery({ queryKey: ['myInvitations'], queryFn: () => api.listMyInvitations(), staleTime: 0, refetchOnMount: 'always' })
 
 export function useInvitationActions() {
   const qc = useQueryClient()
@@ -43,8 +43,9 @@ export function useDeleteFamily() {
 export const useMembers = (familyId?: string) =>
   useQuery({ queryKey: ['members', familyId], queryFn: () => api.listMembers(familyId!), enabled: !!familyId })
 
-export const useInvitations = (familyId?: string) =>
-  useQuery({ queryKey: ['invitations', familyId], queryFn: () => api.listInvitations(familyId!), enabled: !!familyId })
+// Список приглашений доступен только владельцу (бэкенд требует OWNER), поэтому гейтим запрос.
+export const useInvitations = (familyId?: string, enabled = true) =>
+  useQuery({ queryKey: ['invitations', familyId], queryFn: () => api.listInvitations(familyId!), enabled: !!familyId && enabled })
 
 export function useMemberMutations(familyId: string) {
   const qc = useQueryClient()

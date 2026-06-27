@@ -72,8 +72,19 @@ public class OperationService {
 
         LocalDate fromBound = from != null ? from : DateBounds.MIN;
         LocalDate toBound = to != null ? to : DateBounds.MAX;
-        BigDecimal totalIncome = operationRepository.sumAmount(familyId, OperationType.INCOME, fromBound, toBound);
-        BigDecimal totalExpense = operationRepository.sumAmount(familyId, OperationType.EXPENSE, fromBound, toBound);
+        // Тоталы считаем по тем же фильтрам, что и содержимое страницы (категория/участник/поиск),
+        // иначе суммы не совпадают с отфильтрованным списком. Фильтр по типу учитываем отдельно:
+        // если пользователь сузил список до одного типа, противоположный тотал должен быть 0.
+        String searchParam = (search != null && !search.isBlank())
+                ? "%" + search.trim().toLowerCase() + "%" : null;
+        BigDecimal totalIncome = (type == null || type == OperationType.INCOME)
+                ? operationRepository.sumAmountFiltered(familyId, OperationType.INCOME, categoryId, memberId,
+                        fromBound, toBound, searchParam)
+                : BigDecimal.ZERO;
+        BigDecimal totalExpense = (type == null || type == OperationType.EXPENSE)
+                ? operationRepository.sumAmountFiltered(familyId, OperationType.EXPENSE, categoryId, memberId,
+                        fromBound, toBound, searchParam)
+                : BigDecimal.ZERO;
 
         return new OperationPageDto(content, result.getNumber(), result.getSize(),
                 result.getTotalElements(), result.getTotalPages(), totalIncome, totalExpense);

@@ -40,10 +40,21 @@ public class RefreshTokenService {
     public User rotate(String rawToken) {
         RefreshToken stored = repository.findByTokenHash(hash(rawToken))
                 .orElseThrow(InvalidTokenException::new);
-        if (!stored.isActive()) {
+
+        if (stored.isRevoked()) {
+            // Повторное предъявление уже ротированного токена — признак кражи/реиспользования.
+            // Гасим всю семью токенов пользователя, чтобы инвалидировать и украденную ветку.
+            repository.revokeAllByUser(stored.getUser());
             throw new InvalidTokenException();
         }
-        stored.revoke();
+        if (!Instant.now().isBefore(stored.getExpiresAt())) {
+            throw new InvalidTokenException();
+        }
+        // Атомарно гасим токен: 0 строк означает, что параллельный refresh уже его использовал.
+        if (repository.revokeIfActive(stored.getId()) == 0) {
+            repository.revokeAllByUser(stored.getUser());
+            throw new InvalidTokenException();
+        }
         return stored.getUser();
     }
 
