@@ -6,6 +6,7 @@ import PageHeader from '../components/PageHeader'
 import { Icon, Loader } from '../components/ui'
 import PeriodSwitcher from '../components/PeriodSwitcher'
 import { api } from '../api'
+import { comingSoon } from '../components/toast'
 import { useByCategory, useByMember, useCashflow, useMembers, useSummary } from '../api/queries'
 import { useCurrentFamily } from '../family/FamilyContext'
 import { customPeriod, periodRange, type PeriodKey } from '../lib/period'
@@ -29,6 +30,7 @@ export default function ReportsPage() {
 
   const toggle = (id: string) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]))
   const exp = async (format: 'xlsx' | 'pdf' | 'csv') => {
+    if (format === 'pdf') { comingSoon('PDF-отчёты'); return }
     setExporting(format)
     try { await api.exportReport(params, format) } finally { setExporting(null) }
   }
