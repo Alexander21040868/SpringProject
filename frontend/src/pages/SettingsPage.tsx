@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import PageHeader from '../components/PageHeader'
 import { Avatar, Icon, Loader, Select } from '../components/ui'
+import { AVATAR_DEFAULT } from '../lib/colors'
 import { notify } from '../components/toast'
 import { useMe, useUpdateMe } from '../api/queries'
 import { useAuth } from '../auth/AuthContext'
@@ -44,7 +45,7 @@ export default function SettingsPage() {
       <div style={{ padding: '0 24px', display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 520 }}>
         <div className="card">
           <div className="row" style={{ gap: 12, marginBottom: 18 }}>
-            <Avatar name={name || me.name} color="#185FA5" size={48} />
+            <Avatar name={name || me.name} color={AVATAR_DEFAULT} size={48} />
             <div>
               <div style={{ fontSize: 15, fontWeight: 500 }}>{me.name}</div>
               <div className="hint" style={{ fontSize: 12 }}>{me.email}</div>

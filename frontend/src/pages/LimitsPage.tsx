@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import PageHeader from '../components/PageHeader'
 import { Icon, LIMIT_COLOR, LIMIT_LABEL, Loader, Modal, Ring } from '../components/ui'
+import { CATEGORY_FALLBACK } from '../lib/colors'
 import { useCategories, useLimits, useSetLimits } from '../api/queries'
 import { useCurrentFamily } from '../family/FamilyContext'
 import { money } from '../lib/format'
@@ -97,7 +98,7 @@ function EditLimitsModal({ familyId, limits, onClose }: { familyId: string; limi
       )}
       {cats.map((c) => (
         <div key={c.id} className="row" style={{ gap: 11, marginBottom: 12 }}>
-          <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: (c.color ?? '#888') + '24', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 'var(--radius-md)', background: (c.color ?? CATEGORY_FALLBACK) + '24', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Icon name={c.icon} size={17} color={c.color} />
           </div>
           <span style={{ flex: 1, fontSize: 13 }}>{c.name}</span>

@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useState } from 'react'
 import { Avatar, Icon, IconButton, RoleBadge } from './ui'
+import { AVATAR_DEFAULT } from '../lib/colors'
 import CreateFamilyModal from './CreateFamilyModal'
 import InvitationsBanner from './InvitationsBanner'
 import { useAuth } from '../auth/AuthContext'
@@ -91,7 +92,7 @@ export default function Layout() {
 
         <div style={{ marginTop: 'auto', borderTop: '0.5px solid var(--border)', paddingTop: 10 }}>
           <div className="row" style={{ gap: 9, padding: '6px 6px', position: 'relative' }}>
-            <Avatar name={user?.name ?? '?'} color="#185FA5" size={30} />
+            <Avatar name={user?.name ?? '?'} color={AVATAR_DEFAULT} size={30} />
             <div style={{ minWidth: 0, flex: 1 }}>
               <div style={{ fontSize: 12.5, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name}</div>
               <div className="hint" style={{ fontSize: 12 }}>{family ? <RoleBadge role={family.myRole} /> : '—'}</div>

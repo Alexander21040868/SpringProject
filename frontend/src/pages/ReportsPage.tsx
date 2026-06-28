@@ -11,6 +11,7 @@ import { useByCategory, useByMember, useCashflow, useMembers, useSummary } from 
 import { useCurrentFamily } from '../family/FamilyContext'
 import { customPeriod, periodRange, type PeriodKey } from '../lib/period'
 import { money, moneyShort } from '../lib/format'
+import { CHART } from '../lib/colors'
 import type { Granularity } from '../types'
 
 export default function ReportsPage() {
@@ -142,8 +143,8 @@ function TrendCard({ params }: { params: P }) {
         <span className="hint" style={{ fontSize: 12 }}>{GRAN_LABEL[granularity]}</span>
       </div>
       <div className="row" style={{ gap: 14, fontSize: 12, color: 'var(--text-secondary)', marginBottom: 8 }}>
-        <span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 3, background: '#1D9E75' }} />Доходы</span>
-        <span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 0, borderTop: '3px dashed #E24B4A' }} />Расходы</span>
+        <span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 3, background: 'var(--chart-income)' }} />Доходы</span>
+        <span className="row" style={{ gap: 5 }}><span style={{ width: 14, height: 0, borderTop: '3px dashed var(--chart-expense)' }} />Расходы</span>
       </div>
       <div style={{ height: 180 }} role="img" aria-label={`Динамика доходов и расходов ${GRAN_LABEL[granularity]}`}>
         <ResponsiveContainer width="100%" height="100%">
@@ -153,8 +154,8 @@ function TrendCard({ params }: { params: P }) {
             <YAxis tick={{ fontSize: 12, fill: 'var(--text-tertiary)' }} axisLine={false} tickLine={false} tickFormatter={(v) => moneyShort(v)} />
             <Tooltip formatter={(v: number) => money(v)} contentStyle={tooltipStyle} wrapperStyle={{ zIndex: 100 }}
               itemStyle={{ color: 'var(--text-primary)' }} labelStyle={{ color: 'var(--text-secondary)' }} />
-            <Line type="monotone" dataKey="income" stroke="#1D9E75" strokeWidth={2} dot={{ r: 3 }} />
-            <Line type="monotone" dataKey="expense" stroke="#E24B4A" strokeWidth={2} strokeDasharray="6 4" dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="income" stroke={CHART.income} strokeWidth={2} dot={{ r: 3 }} />
+            <Line type="monotone" dataKey="expense" stroke={CHART.expense} strokeWidth={2} strokeDasharray="6 4" dot={{ r: 3 }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -215,6 +216,6 @@ function Mini({ label, value, color }: { label: string; value: string; color?: s
 
 const tooltipStyle: React.CSSProperties = {
   background: 'var(--bg-secondary)', border: '0.5px solid var(--border-strong)',
-  borderRadius: 8, fontSize: 12, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)',
-  padding: '8px 12px', boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+  borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)',
+  padding: '8px 12px', boxShadow: 'var(--shadow-md)',
 }

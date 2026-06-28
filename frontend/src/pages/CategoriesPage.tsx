@@ -4,10 +4,11 @@ import { ConfirmDialog, Icon, Loader, Modal } from '../components/ui'
 import { useCategories, useCategoryMutations } from '../api/queries'
 import { useCurrentFamily } from '../family/FamilyContext'
 import { money } from '../lib/format'
+import { CATEGORY_PALETTE } from '../lib/colors'
 import type { Category, OperationType } from '../types'
 
 const ICONS = ['shopping-cart', 'car', 'device-gamepad-2', 'heartbeat', 'school', 'coffee', 'home', 'plane', 'briefcase', 'building-store', 'chart-line', 'tools', 'gift', 'paw', 'shirt', 'bolt']
-const COLORS = ['#1D9E75', '#378ADD', '#D4537E', '#BA7517', '#7F77DD', '#D85A30', '#0F6E56', '#185FA5']
+const COLORS = CATEGORY_PALETTE
 
 export default function CategoriesPage() {
   const { family, isLoading } = useCurrentFamily()

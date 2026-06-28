@@ -84,15 +84,15 @@ function CashflowCard({ familyId }: { familyId: string }) {
         {points.map((pt) => (
           <div key={pt.month} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5, height: '100%', justifyContent: 'flex-end' }}>
             <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: '100%' }}>
-              <div style={{ width: 9, height: `${(pt.income / max) * 100}%`, minHeight: pt.income > 0 ? 3 : 0, background: '#1D9E75', borderRadius: '3px 3px 0 0' }} title={`Доход: ${money(pt.income)}`} />
-              <div style={{ width: 9, height: `${(pt.expense / max) * 100}%`, minHeight: pt.expense > 0 ? 3 : 0, background: '#E24B4A', borderRadius: '3px 3px 0 0' }} title={`Расход: ${money(pt.expense)}`} />
+              <div style={{ width: 9, height: `${(pt.income / max) * 100}%`, minHeight: pt.income > 0 ? 3 : 0, background: 'var(--chart-income)', borderRadius: '3px 3px 0 0' }} title={`Доход: ${money(pt.income)}`} />
+              <div style={{ width: 9, height: `${(pt.expense / max) * 100}%`, minHeight: pt.expense > 0 ? 3 : 0, background: 'var(--chart-expense)', borderRadius: '3px 3px 0 0' }} title={`Расход: ${money(pt.expense)}`} />
             </div>
             <span className="hint" style={{ fontSize: 12 }}>{pt.label}</span>
           </div>
         ))}
       </div>
       <div className="row" style={{ gap: 14, marginTop: 10, fontSize: 12, color: 'var(--text-secondary)' }}>
-        <Legend color="#1D9E75" label="Доходы" /><Legend color="#E24B4A" label="Расходы" />
+        <Legend color="var(--chart-income)" label="Доходы" /><Legend color="var(--chart-expense)" label="Расходы" />
       </div>
     </div>
   )
